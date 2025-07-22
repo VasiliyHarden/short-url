@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 )
 
-const baseURL = "http://localhost:8080"
+const BaseURL = "http://localhost:8080"
 
 var store = make(map[string]string)
 
@@ -14,7 +14,7 @@ func Generate(url string) string {
 	code := base64.RawURLEncoding.EncodeToString(hash[:6])
 	store[code] = url
 
-	return baseURL + "/" + code
+	return BaseURL + "/" + code
 }
 
 func Resolve(code string) (string, bool) {
