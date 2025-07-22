@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -34,8 +35,7 @@ func TestShorten(t *testing.T) {
 			contentType: "text/plain; charset=utf-8",
 			method:      http.MethodGet,
 			want: want{
-				code:        http.StatusBadRequest,
-				contentType: "text/plain; charset=utf-8",
+				code: http.StatusMethodNotAllowed,
 			},
 		},
 		{
@@ -50,19 +50,25 @@ func TestShorten(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			router := chi.NewRouter()
+			router.Post("/", Shorten)
+
 			r := httptest.NewRequest(tc.method, "/", strings.NewReader("https://example.com"))
 			r.Header.Set("Content-Type", tc.contentType)
 			w := httptest.NewRecorder()
 
-			Shorten(w, r)
+			router.ServeHTTP(w, r)
 
 			assert.Equal(t, tc.want.code, w.Code)
-			assert.Equal(t, tc.want.contentType, w.Header().Get("Content-Type"))
 
 			if tc.want.code == http.StatusCreated {
 				assert.True(t, strings.HasPrefix(w.Body.String(), shortener.BaseURL+"/"))
-			} else {
+				assert.Equal(t, tc.want.contentType, w.Header().Get("Content-Type"))
+			}
+
+			if tc.want.code == http.StatusBadRequest {
 				assert.Equal(t, http.StatusText(tc.want.code), strings.TrimSpace(w.Body.String()))
+				assert.Equal(t, tc.want.contentType, w.Header().Get("Content-Type"))
 			}
 		})
 	}

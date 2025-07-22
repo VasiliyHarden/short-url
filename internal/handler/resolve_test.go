@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -33,7 +34,7 @@ func TestResolve(t *testing.T) {
 			method: http.MethodGet,
 			code:   "/dummy",
 			want: want{
-				code: http.StatusBadRequest,
+				code: http.StatusNotFound,
 			},
 		},
 		{
@@ -41,7 +42,7 @@ func TestResolve(t *testing.T) {
 			method: http.MethodPost,
 			code:   "/dummy",
 			want: want{
-				code: http.StatusBadRequest,
+				code: http.StatusNotFound,
 			},
 		},
 	}
@@ -55,11 +56,14 @@ func TestResolve(t *testing.T) {
 				code = strings.TrimPrefix(full, shortener.BaseURL+"/")
 			}
 
+			router := chi.NewRouter()
+			router.Get("/{code}", Resolve)
+
 			r := httptest.NewRequest(tc.method, "/"+code, nil)
 			r.Header.Set("Content-Type", "text/plain")
 			w := httptest.NewRecorder()
 
-			Resolve(w, r)
+			router.ServeHTTP(w, r)
 
 			assert.Equal(t, tc.want.code, w.Code)
 
