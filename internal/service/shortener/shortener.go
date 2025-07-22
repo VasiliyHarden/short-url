@@ -5,7 +5,11 @@ import (
 	"encoding/base64"
 )
 
-const BaseURL = "http://localhost:8080"
+var BaseURL string
+
+func Init(base string) {
+	BaseURL = base
+}
 
 var store = make(map[string]string)
 
