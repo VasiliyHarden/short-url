@@ -6,15 +6,17 @@ import (
 	"net/http"
 )
 
-func Resolve(w http.ResponseWriter, r *http.Request) {
-	code := chi.URLParam(r, "code")
+func Resolve(sh *shortener.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := chi.URLParam(r, "code")
 
-	url, ok := shortener.Resolve(code)
-	if !ok {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
+		url, ok := sh.Resolve(code)
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Location", url)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
-
-	w.Header().Set("Location", url)
-	w.WriteHeader(http.StatusTemporaryRedirect)
 }

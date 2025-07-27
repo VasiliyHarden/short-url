@@ -50,8 +50,14 @@ func TestShorten(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			const baseURL = "localhost:8080"
+
+			gen := shortener.NewHashGenerator()
+			store := shortener.NewMemoryStorage()
+			sh := shortener.NewService(baseURL, gen, store)
+
 			router := chi.NewRouter()
-			router.Post("/", Shorten)
+			router.Post("/", Shorten(sh))
 
 			r := httptest.NewRequest(tc.method, "/", strings.NewReader("https://example.com"))
 			r.Header.Set("Content-Type", tc.contentType)
@@ -62,7 +68,7 @@ func TestShorten(t *testing.T) {
 			assert.Equal(t, tc.want.code, w.Code)
 
 			if tc.want.code == http.StatusCreated {
-				assert.True(t, strings.HasPrefix(w.Body.String(), shortener.BaseURL+"/"))
+				assert.True(t, strings.HasPrefix(w.Body.String(), baseURL+"/"))
 				assert.Equal(t, tc.want.contentType, w.Header().Get("Content-Type"))
 			}
 
