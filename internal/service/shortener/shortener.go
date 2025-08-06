@@ -1,24 +1,26 @@
 package shortener
 
-import (
-	"crypto/sha256"
-	"encoding/base64"
-)
-
-const BaseURL = "http://localhost:8080"
-
-var store = make(map[string]string)
-
-func Generate(url string) string {
-	hash := sha256.Sum256([]byte(url))
-	code := base64.RawURLEncoding.EncodeToString(hash[:6])
-	store[code] = url
-
-	return BaseURL + "/" + code
+type Service struct {
+	gen     Generator
+	store   Storage
+	baseURL string
 }
 
-func Resolve(code string) (string, bool) {
-	value, ok := store[code]
+func NewService(baseURL string, gen Generator, store Storage) *Service {
+	return &Service{
+		gen:     gen,
+		store:   store,
+		baseURL: baseURL,
+	}
+}
 
-	return value, ok
+func (s *Service) Generate(url string) string {
+	code := s.gen.Generate(url)
+	s.store.Save(code, url)
+
+	return s.baseURL + "/" + code
+}
+
+func (s *Service) Resolve(code string) (string, bool) {
+	return s.store.Get(code)
 }

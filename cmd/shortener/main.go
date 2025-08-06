@@ -1,16 +1,24 @@
 package main
 
 import (
-	"net/http"
-
+	"github.com/VasiliyHarden/short-url/internal/config"
 	"github.com/VasiliyHarden/short-url/internal/handler"
+	"github.com/VasiliyHarden/short-url/internal/service/shortener"
+	"log"
+	"net/http"
 )
 
 func main() {
-	router := handler.NewRouter()
+	cfg := config.Load()
 
-	err := http.ListenAndServe(":8080", router)
-	if err != nil {
-		panic(err)
+	gen := shortener.NewHashGenerator()
+	store := shortener.NewMemoryStorage()
+
+	sh := shortener.NewService(cfg.BaseURL, gen, store)
+
+	router := handler.NewRouter(sh)
+
+	if err := http.ListenAndServe(cfg.Addr, router); err != nil {
+		log.Fatal("Server failed to start:", err)
 	}
 }

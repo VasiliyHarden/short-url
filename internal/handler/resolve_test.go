@@ -48,16 +48,22 @@ func TestResolve(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			const baseURL = "localhost:8080"
+
+			gen := shortener.NewHashGenerator()
+			store := shortener.NewMemoryStorage()
+			sh := shortener.NewService(baseURL, gen, store)
+
 			var code string
 			if tc.code != "" {
 				code = tc.code
 			} else {
-				full := shortener.Generate(tc.want.location)
-				code = strings.TrimPrefix(full, shortener.BaseURL+"/")
+				full := sh.Generate(tc.want.location)
+				code = strings.TrimPrefix(full, baseURL+"/")
 			}
 
 			router := chi.NewRouter()
-			router.Get("/{code}", Resolve)
+			router.Get("/{code}", Resolve(sh))
 
 			r := httptest.NewRequest(tc.method, "/"+code, nil)
 			r.Header.Set("Content-Type", "text/plain")
