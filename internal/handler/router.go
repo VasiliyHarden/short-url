@@ -1,20 +1,14 @@
 package handler
 
 import (
+	"github.com/go-chi/chi/v5"
 	"net/http"
 )
 
 func NewRouter() http.Handler {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
+	r.Get("/{code}", Resolve)
+	r.Post("/", Shorten)
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			Shorten(w, r)
-			return
-		}
-
-		Resolve(w, r)
-	})
-
-	return mux
+	return r
 }

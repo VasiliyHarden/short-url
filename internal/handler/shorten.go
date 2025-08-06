@@ -8,11 +8,6 @@ import (
 )
 
 func Shorten(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || mediaType != "text/plain" {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
