@@ -10,23 +10,29 @@ type Config struct {
 	BaseURL string
 }
 
+const (
+	defaultAddr    = ":8080"
+	defaultBaseURL = "http://localhost:8080"
+)
+
 func Load() *Config {
 	cfg := &Config{
-		Addr:    getEnv("ADDR", ":8080"),
-		BaseURL: getEnv("BASE_URL", "http://localhost:8080"),
+		Addr:    defaultAddr,
+		BaseURL: defaultBaseURL,
 	}
 
 	flag.StringVar(&cfg.Addr, "a", cfg.Addr, "HTTP server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL for short links")
-
 	flag.Parse()
+
+	parseEnv(&cfg.Addr, "SERVER_ADDRESS")
+	parseEnv(&cfg.BaseURL, "BASE_URL")
+
 	return cfg
 }
 
-func getEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func parseEnv(target *string, key string) {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		*target = v
 	}
-
-	return fallback
 }
