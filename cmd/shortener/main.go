@@ -15,8 +15,10 @@ func main() {
 	store := shortener.NewMemoryStorage()
 
 	sh := shortener.NewService(cfg.BaseURL, gen, store)
+	logger := config.NewLogger()
+	defer logger.Sync()
 
-	router := handler.NewRouter(sh)
+	router := handler.NewRouter(sh, logger)
 
 	if err := http.ListenAndServe(cfg.Addr, router); err != nil {
 		log.Fatal("Server failed to start:", err)
