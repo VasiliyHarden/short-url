@@ -10,7 +10,7 @@ import (
 func Shorten(sh *shortener.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-		if err != nil || mediaType != "text/plain" {
+		if err != nil || (mediaType != "text/plain" && mediaType != "application/x-gzip") {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
