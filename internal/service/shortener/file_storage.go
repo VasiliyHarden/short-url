@@ -2,6 +2,7 @@ package shortener
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"sync"
@@ -11,6 +12,7 @@ type fileStorage struct {
 	data map[string]string
 	path string
 	mu   sync.RWMutex
+	f    *os.File
 }
 
 type record struct {
@@ -19,28 +21,40 @@ type record struct {
 }
 
 func NewFileStorage(path string) (Storage, error) {
-	f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
 	fs := &fileStorage{
 		data: make(map[string]string),
 		path: path,
 	}
 
-	var records []record
+	readFile, err := os.Open(path)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+	} else {
+		defer readFile.Close()
 
-	if err := json.NewDecoder(f).Decode(&records); err != nil && err != io.EOF {
-		return nil, err
-	}
+		dec := json.NewDecoder(readFile)
+		for {
+			var rec record
+			if err := dec.Decode(&rec); err != nil {
+				if err == io.EOF {
+					break
+				}
+				return nil, err
+			}
 
-	for _, rec := range records {
-		if rec.ShortURL != "" && rec.OriginalURL != "" {
-			fs.data[rec.ShortURL] = rec.OriginalURL
+			if rec.ShortURL != "" && rec.OriginalURL != "" {
+				fs.data[rec.ShortURL] = rec.OriginalURL
+			}
 		}
 	}
+
+	writeFile, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		return nil, err
+	}
+	fs.f = writeFile
 
 	return fs, nil
 }
@@ -51,27 +65,28 @@ func (fs *fileStorage) Save(code, originalURL string) error {
 
 	fs.data[code] = originalURL
 
-	records := make([]record, 0, len(fs.data))
-	for short, orig := range fs.data {
-		records = append(records, record{ShortURL: short, OriginalURL: orig})
+	rec := record{
+		ShortURL:    code,
+		OriginalURL: originalURL,
 	}
 
-	f, err := os.OpenFile(fs.path, os.O_WRONLY|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if err := json.NewEncoder(f).Encode(records); err != nil {
+	if err := json.NewEncoder(fs.f).Encode(&rec); err != nil {
 		return err
 	}
 
-	return f.Sync()
+	return fs.f.Sync()
 }
 
 func (fs *fileStorage) Get(code string) (string, bool) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
+
 	value, ok := fs.data[code]
 	return value, ok
+}
+
+func (fs *fileStorage) Close() error {
+	err := fs.f.Close()
+
+	return err
 }

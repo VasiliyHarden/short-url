@@ -1,7 +1,10 @@
 package shortener
 
+import "sync"
+
 type memoryStorage struct {
 	data map[string]string
+	mu   sync.RWMutex
 }
 
 func NewMemoryStorage() Storage {
@@ -11,13 +14,21 @@ func NewMemoryStorage() Storage {
 }
 
 func (m *memoryStorage) Save(code, originalURL string) error {
-	m.data[code] = originalURL
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
+	m.data[code] = originalURL
 	return nil
 }
 
 func (m *memoryStorage) Get(code string) (string, bool) {
-	value, ok := m.data[code]
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
+	value, ok := m.data[code]
 	return value, ok
+}
+
+func (m *memoryStorage) Close() error {
+	return nil
 }
