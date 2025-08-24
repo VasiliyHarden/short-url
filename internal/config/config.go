@@ -6,27 +6,32 @@ import (
 )
 
 type Config struct {
-	Addr    string
-	BaseURL string
+	Addr            string
+	BaseURL         string
+	FileStoragePath string
 }
 
 const (
-	defaultAddr    = ":8080"
-	defaultBaseURL = "http://localhost:8080"
+	defaultAddr            = ":8080"
+	defaultBaseURL         = "http://localhost:8080"
+	defaultFileStoragePath = "./storage.json"
 )
 
 func Load() *Config {
 	cfg := &Config{
-		Addr:    defaultAddr,
-		BaseURL: defaultBaseURL,
+		Addr:            defaultAddr,
+		BaseURL:         defaultBaseURL,
+		FileStoragePath: defaultFileStoragePath,
 	}
 
 	flag.StringVar(&cfg.Addr, "a", cfg.Addr, "HTTP server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL for short links")
+	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
 	flag.Parse()
 
 	parseEnv(&cfg.Addr, "SERVER_ADDRESS")
 	parseEnv(&cfg.BaseURL, "BASE_URL")
+	parseEnv(&cfg.FileStoragePath, "FILE_STORAGE_PATH")
 
 	return cfg
 }

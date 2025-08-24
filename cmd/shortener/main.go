@@ -12,7 +12,14 @@ func main() {
 	cfg := config.Load()
 
 	gen := shortener.NewHashGenerator()
-	store := shortener.NewMemoryStorage()
+
+	var store shortener.Storage
+	store, err := shortener.NewFileStorage(cfg.FileStoragePath)
+	if err != nil {
+		log.Printf("Failed to create file storage: %v, falling back to memory storage", err)
+		store = shortener.NewMemoryStorage()
+	}
+	defer store.Close()
 
 	sh := shortener.NewService(cfg.BaseURL, gen, store)
 	logger := config.NewLogger()

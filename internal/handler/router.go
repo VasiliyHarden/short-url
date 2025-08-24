@@ -10,7 +10,6 @@ import (
 
 func NewRouter(sh *shortener.Service, logger *zap.Logger) http.Handler {
 	r := chi.NewRouter()
-
 	r.Use(middleware.Decompress)
 	r.Use(middleware.Logging(logger))
 	r.Use(middleware.Compress)
