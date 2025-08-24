@@ -13,6 +13,7 @@ func NewRouter(sh *shortener.Service, logger *zap.Logger) http.Handler {
 	r.Use(middleware.Logging(logger))
 	r.Get("/{code}", Resolve(sh))
 	r.Post("/", Shorten(sh))
+	r.Post("/api/shorten", ShortenJSON(sh))
 
 	return r
 }
