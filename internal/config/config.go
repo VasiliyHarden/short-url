@@ -9,6 +9,7 @@ type Config struct {
 	Addr            string
 	BaseURL         string
 	FileStoragePath string
+	DatabaseDSN     string
 }
 
 const (
@@ -27,11 +28,13 @@ func Load() *Config {
 	flag.StringVar(&cfg.Addr, "a", cfg.Addr, "HTTP server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL for short links")
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
+	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database DSN")
 	flag.Parse()
 
 	parseEnv(&cfg.Addr, "SERVER_ADDRESS")
 	parseEnv(&cfg.BaseURL, "BASE_URL")
 	parseEnv(&cfg.FileStoragePath, "FILE_STORAGE_PATH")
+	parseEnv(&cfg.DatabaseDSN, "DATABASE_DSN")
 
 	return cfg
 }
