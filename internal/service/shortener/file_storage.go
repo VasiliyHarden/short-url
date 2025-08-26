@@ -1,6 +1,7 @@
 package shortener
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -75,6 +76,16 @@ func (fs *fileStorage) Save(code, originalURL string) error {
 	}
 
 	return fs.f.Sync()
+}
+
+func (fs *fileStorage) SaveBatch(_ context.Context, batch []BatchItem) error {
+	for _, batchItem := range batch {
+		err := fs.Save(batchItem.Code, batchItem.OriginalURL)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (fs *fileStorage) Get(code string) (string, bool) {
