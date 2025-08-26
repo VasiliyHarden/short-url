@@ -58,7 +58,7 @@ func TestResolve(t *testing.T) {
 			if tc.code != "" {
 				code = tc.code
 			} else {
-				full := sh.Generate(tc.want.location)
+				full, _ := sh.Generate(tc.want.location)
 				code = strings.TrimPrefix(full, baseURL+"/")
 			}
 

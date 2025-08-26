@@ -60,7 +60,7 @@ func NewFileStorage(path string) (Storage, error) {
 	return fs, nil
 }
 
-func (fs *fileStorage) Save(code, originalURL string) error {
+func (fs *fileStorage) Save(code, originalURL string) (existingCode string, inserted bool, err error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -72,15 +72,15 @@ func (fs *fileStorage) Save(code, originalURL string) error {
 	}
 
 	if err := json.NewEncoder(fs.f).Encode(&rec); err != nil {
-		return err
+		return "", false, err
 	}
 
-	return fs.f.Sync()
+	return "", true, fs.f.Sync()
 }
 
 func (fs *fileStorage) SaveBatch(_ context.Context, batch []BatchItem) error {
 	for _, batchItem := range batch {
-		err := fs.Save(batchItem.Code, batchItem.OriginalURL)
+		_, _, err := fs.Save(batchItem.Code, batchItem.OriginalURL)
 		if err != nil {
 			return err
 		}
