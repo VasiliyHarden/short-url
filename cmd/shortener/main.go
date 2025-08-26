@@ -18,13 +18,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.Close()
 
 	var store shortener.Storage
-	store, err = shortener.NewFileStorage(cfg.FileStoragePath)
-	if err != nil {
-		log.Printf("Failed to create file storage: %v, falling back to memory storage", err)
-		store = shortener.NewMemoryStorage()
+	if cfg.DatabaseDSN != "" {
+		db.Migrate()
+		store = db
+	} else {
+		log.Println("DATABASE_DSN is not set, falling back to file storage")
+		store, err = shortener.NewFileStorage(cfg.FileStoragePath)
+		if err != nil {
+			log.Printf("Failed to create file storage: %v, falling back to memory storage", err)
+			store = shortener.NewMemoryStorage()
+		}
 	}
 	defer store.Close()
 
