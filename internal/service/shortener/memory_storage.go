@@ -16,12 +16,12 @@ func NewMemoryStorage() Storage {
 	}
 }
 
-func (m *memoryStorage) Save(code, originalURL string) error {
+func (m *memoryStorage) Save(code, originalURL string) (existingCode string, inserted bool, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.data[code] = originalURL
-	return nil
+	return "", true, nil
 }
 
 func (m *memoryStorage) SaveBatch(_ context.Context, batch []BatchItem) error {
