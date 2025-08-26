@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/golang-migrate/migrate/v4"
+	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
 	"time"
@@ -30,6 +33,29 @@ func NewRepository(databaseDSN string) (*DB, error) {
 	return repo, nil
 }
 
+func (repo *DB) Migrate() {
+	if repo.db == nil {
+		return
+	}
+
+	driver, err := pgmigrate.WithInstance(repo.db, &pgmigrate.Config{})
+	if err != nil {
+		log.Fatalf("could not create postgres driver: %v", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres", driver)
+	if err != nil {
+		log.Fatalf("could not start migration: %v", err)
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatalf("migration failed: %v", err)
+	}
+	log.Println("migrations applied successfully")
+}
+
 func (repo *DB) Ping(ctx context.Context) error {
 	if repo.db == nil {
 		return errors.New("db is nil")
@@ -39,15 +65,4 @@ func (repo *DB) Ping(ctx context.Context) error {
 	defer cancel()
 
 	return repo.db.PingContext(ctx)
-}
-
-func (repo *DB) Close() {
-	if repo.db == nil {
-		return
-	}
-
-	err := repo.db.Close()
-	if err != nil {
-		log.Printf("Failed to close database: %v", err)
-	}
 }
