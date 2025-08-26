@@ -8,7 +8,7 @@ type BatchItem struct {
 }
 
 type Storage interface {
-	Save(code, originalURL string) error
+	Save(code, originalURL string) (existingCode string, inserted bool, err error)
 	SaveBatch(ctx context.Context, batch []BatchItem) error
 	Get(code string) (string, bool)
 	Close() error

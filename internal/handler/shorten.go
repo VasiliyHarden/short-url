@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
 	"io"
 	"mime"
@@ -21,7 +22,17 @@ func Shorten(sh *shortener.Service) http.HandlerFunc {
 			return
 		}
 
-		shortURL := sh.Generate(string(body))
+		shortURL, err := sh.Generate(string(body))
+		if err != nil {
+			if errors.Is(err, shortener.ErrDuplicate) {
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusConflict)
+				_, _ = io.WriteString(w, shortURL)
+				return
+			}
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
