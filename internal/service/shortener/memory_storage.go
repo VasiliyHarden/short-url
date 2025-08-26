@@ -1,6 +1,9 @@
 package shortener
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 type memoryStorage struct {
 	data map[string]string
@@ -18,6 +21,16 @@ func (m *memoryStorage) Save(code, originalURL string) error {
 	defer m.mu.Unlock()
 
 	m.data[code] = originalURL
+	return nil
+}
+
+func (m *memoryStorage) SaveBatch(_ context.Context, batch []BatchItem) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, batchItem := range batch {
+		m.data[batchItem.Code] = batchItem.OriginalURL
+	}
 	return nil
 }
 
