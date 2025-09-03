@@ -1,12 +1,17 @@
 package shortener
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 type Service struct {
 	gen     Generator
 	store   Storage
 	baseURL string
 }
+
+var ErrDuplicate = errors.New("duplicate")
 
 func NewService(baseURL string, gen Generator, store Storage) *Service {
 	return &Service{
@@ -16,11 +21,17 @@ func NewService(baseURL string, gen Generator, store Storage) *Service {
 	}
 }
 
-func (s *Service) Generate(url string) string {
+func (s *Service) Generate(url string) (string, error) {
 	code := s.gen.Generate(url)
-	s.store.Save(code, url)
+	existingCode, inserted, err := s.store.Save(code, url)
+	if err != nil {
+		return "", err
+	}
+	if !inserted {
+		return s.baseURL + "/" + existingCode, ErrDuplicate
+	}
 
-	return s.baseURL + "/" + code
+	return s.baseURL + "/" + code, nil
 }
 
 func (s *Service) GenerateBatch(ctx context.Context, urls []string) ([]string, error) {

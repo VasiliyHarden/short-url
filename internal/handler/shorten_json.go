@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
+	"go.uber.org/zap"
 	"mime"
 	"net/http"
 )
@@ -15,7 +16,14 @@ type ShortenResponsePayload struct {
 	Result string `json:"result"`
 }
 
-func ShortenJSON(sh *shortener.Service) http.HandlerFunc {
+func writeShortURLJSON(w http.ResponseWriter, status int, shortURL string) {
+	response, _ := json.Marshal(ShortenResponsePayload{Result: shortURL})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write(response)
+}
+
+func ShortenJSON(sh *shortener.Service, logger *zap.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || (mediaType != "application/json" && mediaType != "application/x-gzip") {
@@ -34,14 +42,7 @@ func ShortenJSON(sh *shortener.Service) http.HandlerFunc {
 			return
 		}
 
-		respBytes, err := json.Marshal(ShortenResponsePayload{Result: sh.Generate(payload.URL)})
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write(respBytes)
+		shortURL, err := sh.Generate(payload.URL)
+		respondShortURL(w, shortURL, err, writeShortURLJSON, logger)
 	}
 }
