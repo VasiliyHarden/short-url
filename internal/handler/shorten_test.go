@@ -4,6 +4,7 @@ import (
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -57,7 +58,8 @@ func TestShorten(t *testing.T) {
 			sh := shortener.NewService(baseURL, gen, store)
 
 			router := chi.NewRouter()
-			router.Post("/", Shorten(sh))
+			logger := zap.NewNop()
+			router.Post("/", Shorten(sh, logger))
 
 			r := httptest.NewRequest(tc.method, "/", strings.NewReader("https://example.com"))
 			r.Header.Set("Content-Type", tc.contentType)
