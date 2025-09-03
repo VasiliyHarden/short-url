@@ -13,11 +13,6 @@ type Service struct {
 
 var ErrDuplicate = errors.New("duplicate")
 
-type DuplicateError struct{}
-
-func (e *DuplicateError) Error() string { return "duplicate url" }
-func (e *DuplicateError) Unwrap() error { return ErrDuplicate }
-
 func NewService(baseURL string, gen Generator, store Storage) *Service {
 	return &Service{
 		gen:     gen,
@@ -33,7 +28,7 @@ func (s *Service) Generate(url string) (string, error) {
 		return "", err
 	}
 	if !inserted {
-		return s.baseURL + "/" + existingCode, &DuplicateError{}
+		return s.baseURL + "/" + existingCode, ErrDuplicate
 	}
 
 	return s.baseURL + "/" + code, nil

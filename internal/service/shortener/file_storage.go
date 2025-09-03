@@ -10,10 +10,11 @@ import (
 )
 
 type fileStorage struct {
-	data map[string]string
-	path string
-	mu   sync.RWMutex
-	f    *os.File
+	codeToURL map[string]string
+	urlToCode map[string]string
+	path      string
+	mu        sync.RWMutex
+	f         *os.File
 }
 
 type record struct {
@@ -23,8 +24,9 @@ type record struct {
 
 func NewFileStorage(path string) (Storage, error) {
 	fs := &fileStorage{
-		data: make(map[string]string),
-		path: path,
+		codeToURL: make(map[string]string),
+		urlToCode: make(map[string]string),
+		path:      path,
 	}
 
 	readFile, err := os.Open(path)
@@ -46,7 +48,8 @@ func NewFileStorage(path string) (Storage, error) {
 			}
 
 			if rec.ShortURL != "" && rec.OriginalURL != "" {
-				fs.data[rec.ShortURL] = rec.OriginalURL
+				fs.codeToURL[rec.ShortURL] = rec.OriginalURL
+				fs.urlToCode[rec.OriginalURL] = rec.ShortURL
 			}
 		}
 	}
@@ -60,11 +63,16 @@ func NewFileStorage(path string) (Storage, error) {
 	return fs, nil
 }
 
-func (fs *fileStorage) Save(code, originalURL string) (existingCode string, inserted bool, err error) {
+func (fs *fileStorage) Save(code, originalURL string) (retCode string, inserted bool, err error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	fs.data[code] = originalURL
+	if existingCode, ok := fs.urlToCode[originalURL]; ok {
+		return existingCode, false, nil
+	}
+
+	fs.codeToURL[code] = originalURL
+	fs.urlToCode[originalURL] = code
 
 	rec := record{
 		ShortURL:    code,
@@ -75,7 +83,7 @@ func (fs *fileStorage) Save(code, originalURL string) (existingCode string, inse
 		return "", false, err
 	}
 
-	return "", true, fs.f.Sync()
+	return code, true, fs.f.Sync()
 }
 
 func (fs *fileStorage) SaveBatch(_ context.Context, batch []BatchItem) error {
@@ -92,7 +100,7 @@ func (fs *fileStorage) Get(code string) (string, bool) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
-	value, ok := fs.data[code]
+	value, ok := fs.codeToURL[code]
 	return value, ok
 }
 

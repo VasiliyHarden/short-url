@@ -1,14 +1,20 @@
 package handler
 
 import (
-	"errors"
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
+	"go.uber.org/zap"
 	"io"
 	"mime"
 	"net/http"
 )
 
-func Shorten(sh *shortener.Service) http.HandlerFunc {
+func writeShortURLText(w http.ResponseWriter, status int, url string) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(url))
+}
+
+func Shorten(sh *shortener.Service, logger *zap.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || (mediaType != "text/plain" && mediaType != "application/x-gzip") {
@@ -21,23 +27,9 @@ func Shorten(sh *shortener.Service) http.HandlerFunc {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
+		defer r.Body.Close()
 
 		shortURL, err := sh.Generate(string(body))
-		if err != nil {
-			if errors.Is(err, shortener.ErrDuplicate) {
-				w.Header().Set("Content-Type", "text/plain")
-				w.WriteHeader(http.StatusConflict)
-				_, _ = io.WriteString(w, shortURL)
-				return
-			}
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = io.WriteString(w, shortURL)
-
-		_ = r.Body.Close()
+		respondShortURL(w, shortURL, err, writeShortURLText, logger)
 	}
 }
