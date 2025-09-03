@@ -2,8 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
+	"go.uber.org/zap"
 	"mime"
 	"net/http"
 )
@@ -16,7 +16,14 @@ type ShortenResponsePayload struct {
 	Result string `json:"result"`
 }
 
-func ShortenJSON(sh *shortener.Service) http.HandlerFunc {
+func writeShortURLJSON(w http.ResponseWriter, status int, shortURL string) {
+	response, _ := json.Marshal(ShortenResponsePayload{Result: shortURL})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write(response)
+}
+
+func ShortenJSON(sh *shortener.Service, logger *zap.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || (mediaType != "application/json" && mediaType != "application/x-gzip") {
@@ -36,21 +43,6 @@ func ShortenJSON(sh *shortener.Service) http.HandlerFunc {
 		}
 
 		shortURL, err := sh.Generate(payload.URL)
-		if err != nil {
-			if errors.Is(err, shortener.ErrDuplicate) {
-				respBytes, _ := json.Marshal(ShortenResponsePayload{Result: shortURL})
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusConflict)
-				_, _ = w.Write(respBytes)
-				return
-			}
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		respBytes, _ := json.Marshal(ShortenResponsePayload{Result: shortURL})
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write(respBytes)
+		respondShortURL(w, shortURL, err, writeShortURLJSON, logger)
 	}
 }

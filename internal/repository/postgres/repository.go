@@ -5,12 +5,12 @@ import (
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
 )
 
-func (repo *DB) Save(code, originalURL string) (existingCode string, inserted bool, err error) {
-	err = repo.db.QueryRow(insertOnConflictShortURL, code, originalURL).Scan(&existingCode, &inserted)
+func (repo *DB) Save(code, originalURL string) (retCode string, inserted bool, err error) {
+	err = repo.db.QueryRow(insertOnConflictShortURL, code, originalURL).Scan(&retCode, &inserted)
 	if err != nil {
 		return "", false, err
 	}
-	return existingCode, inserted, nil
+	return retCode, inserted, nil
 }
 
 func (repo *DB) SaveBatch(ctx context.Context, batch []shortener.BatchItem) error {

@@ -16,8 +16,8 @@ func NewRouter(sh *shortener.Service, logger *zap.Logger, db *postgres.DB) http.
 	r.Use(middleware.Compress)
 
 	r.Get("/{code}", Resolve(sh))
-	r.Post("/", Shorten(sh))
-	r.Post("/api/shorten", ShortenJSON(sh))
+	r.Post("/", Shorten(sh, logger))
+	r.Post("/api/shorten", ShortenJSON(sh, logger))
 	r.Post("/api/shorten/batch", ShortenBatchJSON(sh))
 	r.Get("/ping", Ping(db))
 
