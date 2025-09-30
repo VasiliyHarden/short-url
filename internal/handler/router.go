@@ -2,13 +2,14 @@ package handler
 
 import (
 	"github.com/VasiliyHarden/short-url/internal/handler/middleware"
+	"github.com/VasiliyHarden/short-url/internal/repository/postgres"
 	"github.com/VasiliyHarden/short-url/internal/service/shortener"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"net/http"
 )
 
-func NewRouter(sh *shortener.Service, logger *zap.Logger) http.Handler {
+func NewRouter(sh *shortener.Service, logger *zap.Logger, db *postgres.DB) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Decompress)
 	r.Use(middleware.Logging(logger))
@@ -17,6 +18,7 @@ func NewRouter(sh *shortener.Service, logger *zap.Logger) http.Handler {
 	r.Get("/{code}", Resolve(sh))
 	r.Post("/", Shorten(sh))
 	r.Post("/api/shorten", ShortenJSON(sh))
+	r.Get("/ping", Ping(db))
 
 	return r
 }
